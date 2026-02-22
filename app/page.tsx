@@ -1,96 +1,41 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-/* ──────────────────────────── SVG Icon Components ──────────────────────────── */
+/* ──────────────────────── IntersectionObserver Hook ──────────────────────── */
 
-function WarningIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-8 w-8 shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="url(#warningGrad)"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <defs>
-        <linearGradient id="warningGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#ef4444" />
-        </linearGradient>
-      </defs>
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
+function useFadeIn() {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const elements = document.querySelectorAll(".fade-in");
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 }
 
-function SparklesIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-8 w-8"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#7c3aed"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
-    </svg>
-  );
-}
+/* ──────────────────────── Check Icon ──────────────────────── */
 
-function PenToolIcon() {
+function Check() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className="h-8 w-8"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#7c3aed"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 19l7-7 3 3-7 7-3-3z" />
-      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-      <path d="M2 2l7.586 7.586" />
-      <circle cx="11" cy="11" r="2" />
-    </svg>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-8 w-8"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#7c3aed"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-5 w-5 text-[#7c3aed] shrink-0"
+      className="h-4 w-4 shrink-0 text-[#22c55e]"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={2.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -99,311 +44,642 @@ function CheckIcon() {
   );
 }
 
-/* ──────────────────────────── Page Component ──────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   LANDING PAGE
+   ══════════════════════════════════════════════════════════════ */
 
 export default function LandingPage() {
+  useFadeIn();
+
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      q: "Do I need to know what scope creep is to use this?",
+      a: "No. ScopeLock works for anyone who wants professional proposals. If you're new to freelancing, think of it as an AI that writes your contracts — the scope protection is just a bonus.",
+    },
+    {
+      q: "Is the digital signature legally binding?",
+      a: "Yes. E-signatures are legally recognized in most countries. Both parties receive a signed PDF as proof of agreement.",
+    },
+    {
+      q: "Can I use this just as a proposal generator?",
+      a: "Absolutely. Many users only use the AI proposal generator and never touch the scope protection features. Generate, download as PDF, and send to your client however you want.",
+    },
+    {
+      q: "What happens after the 7-day trial?",
+      a: "You'll be asked to choose a plan. If you don't upgrade, you keep read-only access to your existing proposals — nothing gets deleted.",
+    },
+    {
+      q: "Can I cancel anytime?",
+      a: "Yes, cancel from your account settings anytime. No cancellation fees.",
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-[#0f0f0f] text-white overflow-x-hidden">
-      {/* ─── NAVBAR ─── */}
-      <nav
-        id="navbar"
-        className="fixed top-0 left-0 right-0 z-50 border-b border-[#1a1a1a] bg-[#0f0f0f]/80 backdrop-blur-xl"
-      >
+    <main className="min-h-screen bg-[#0f0f0f] text-white">
+      {/* ═══════════════════ SECTION 1: NAVBAR ═══════════════════ */}
+      <nav className="sticky top-0 z-50 border-b border-[#2d2d4e] bg-[#0f0f0f]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-bold tracking-tight text-[#7c3aed]">
-            ScopeLock
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7c3aed] text-sm font-bold text-white">
+              S
+            </div>
+            <span className="text-lg font-bold text-white">
+              ScopeLock
+            </span>
           </Link>
-          <div className="flex items-center gap-3">
+
+          {/* Center nav links */}
+          <div className="hidden items-center gap-8 md:flex">
+            {[
+              ["Features", "#features"],
+              ["Pricing", "#pricing"],
+              ["How it Works", "#how-it-works"],
+              ["FAQ", "#faq"],
+            ].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                className="text-sm text-[#94a3b8] transition-colors hover:text-white"
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+
+          {/* Right actions */}
+          <div className="flex items-center gap-4">
             <Link
-              id="nav-login"
-              href="/signup"
-              className="rounded-lg border border-[#2a2a2a] px-4 py-2 text-sm font-medium text-white transition-all hover:border-[#7c3aed]/50 hover:text-[#7c3aed]"
+              href="/login"
+              className="hidden text-sm text-[#94a3b8] transition-colors hover:text-white sm:block"
             >
-              Login
+              Sign in
             </Link>
             <Link
-              id="nav-get-started"
               href="/signup"
-              className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+              className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9]"
             >
-              Get Started
+              Get Started Free →
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* ─── HERO ─── */}
-      <section
-        id="hero"
-        className="relative flex min-h-screen flex-col items-center justify-center px-6 pt-24 text-center"
-      >
-        {/* Background glow */}
-        <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full bg-[#7c3aed]/10 blur-[120px]" />
+      {/* ═══════════════════ SECTION 2: HERO ═══════════════════ */}
+      <section className="flex min-h-screen items-center justify-center px-6 py-32 text-center">
+        <div className="max-w-3xl">
+          {/* Badge */}
+          <div className="inline-block rounded-full border border-[#7c3aed]/40 bg-[#1a1a2e] px-4 py-1.5 text-sm text-[#a78bfa]">
+            🔒 AI Proposal Generator + Scope Protection
+          </div>
 
-        <div className="relative z-10 max-w-3xl">
-          <h1 className="animate-fade-in-up text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl md:text-7xl">
-            Stop Losing Money to{" "}
-            <span className="bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] bg-clip-text text-transparent">
-              Scope Creep
-            </span>
+          {/* Headline */}
+          <h1 className="mt-6 text-5xl font-bold leading-tight sm:text-6xl">
+            Your clients will always
+            <br />
+            want more for free.
+            <br />
+            <span className="text-[#7c3aed]">Not anymore.</span>
           </h1>
 
-          <p className="animate-fade-in-up-delay-1 mx-auto mt-6 max-w-xl text-lg text-[#a1a1aa] sm:text-xl">
-            Generate professional proposals that protect your time and income.
-            AI-powered, client-signed in minutes.
+          {/* Subheadline */}
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-[#94a3b8] sm:text-xl">
+            ScopeLock does two things: generates professional AI
+            proposals in 30 seconds AND protects you from scope
+            creep. Use it just for proposals, or use the full
+            protection suite — your choice.
           </p>
 
-          <div className="animate-fade-in-up-delay-2 mt-10">
+          {/* CTA row */}
+          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              id="hero-cta"
               href="/signup"
-              className="animate-pulse-glow inline-block rounded-xl bg-[#7c3aed] px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-[#6d28d9] hover:scale-105"
+              className="rounded-xl bg-[#7c3aed] px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-purple-500/25"
             >
-              Generate Your First Proposal Free
+              Start Free Trial →
             </Link>
-          </div>
-
-          <p className="animate-fade-in-up-delay-3 mt-5 text-sm text-[#71717a]">
-            No credit card required · 7-day free trial
-          </p>
-        </div>
-
-        {/* Scroll hint */}
-        <div className="absolute bottom-10 animate-bounce">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-[#71717a]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7" />
-          </svg>
-        </div>
-      </section>
-
-      {/* ─── PROBLEM SECTION ─── */}
-      <section id="problem" className="relative py-24 sm:py-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Sound{" "}
-              <span className="bg-gradient-to-r from-[#f97316] to-[#ef4444] bg-clip-text text-transparent">
-                familiar?
-              </span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-[#a1a1aa]">
-              Every freelancer has been here. These problems cost you thousands.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                title: "Client asks for 10 extra revisions for free",
-                desc: "You quoted 2 rounds of revisions. They're on round 12 and don't see the problem.",
-              },
-              {
-                title: "Project scope keeps expanding, your rate drops",
-                desc: "What started as a simple branding project now includes a full website redesign.",
-              },
-              {
-                title: "No paper trail when client disputes the work",
-                desc: 'They say "we never agreed to that." You know you discussed it, but can\'t prove it.',
-              },
-            ].map((card, i) => (
-              <div
-                key={i}
-                className="group relative rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8 transition-all duration-300 hover:border-[#f97316]/30 hover:bg-[#1f1f1f] hover:-translate-y-1"
-              >
-                {/* Hover glow */}
-                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#f97316]/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="relative z-10">
-                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#f97316]/10 to-[#ef4444]/10 ring-1 ring-[#f97316]/20">
-                    <WarningIcon />
-                  </div>
-                  <h3 className="text-lg font-semibold leading-snug">{card.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">{card.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FEATURES SECTION ─── */}
-      <section id="features" className="relative py-24 sm:py-32">
-        {/* Subtle divider glow */}
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-px w-2/3 bg-gradient-to-r from-transparent via-[#7c3aed]/30 to-transparent" />
-
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Everything you need to{" "}
-              <span className="bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] bg-clip-text text-transparent">
-                protect your income
-              </span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-[#a1a1aa]">
-              Three powerful features that work together to keep your projects
-              profitable.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-6 sm:grid-cols-3">
-            {[
-              {
-                icon: <SparklesIcon />,
-                title: "AI Proposal Generator",
-                desc: "Professional proposals in 30 seconds. Powered by AI that understands freelance contracts and scope management.",
-              },
-              {
-                icon: <PenToolIcon />,
-                title: "Digital Signing",
-                desc: "Client signs online, legally binding. No more chasing signatures or printing documents.",
-              },
-              {
-                icon: <ShieldIcon />,
-                title: "Scope Alert Emails",
-                desc: "AI drafts out-of-scope responses for you. Politely decline extra work with a single click.",
-              },
-            ].map((feat, i) => (
-              <div
-                key={i}
-                className="group relative rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8 transition-all duration-300 hover:border-[#7c3aed]/30 hover:bg-[#1f1f1f] hover:-translate-y-1"
-              >
-                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-[#7c3aed]/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="relative z-10">
-                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-[#7c3aed]/10 ring-1 ring-[#7c3aed]/20">
-                    {feat.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold">{feat.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[#a1a1aa]">{feat.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── PRICING SECTION ─── */}
-      <section id="pricing" className="relative py-24 sm:py-32">
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 h-px w-2/3 bg-gradient-to-r from-transparent via-[#7c3aed]/30 to-transparent" />
-
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold sm:text-4xl">
-              Simple pricing,{" "}
-              <span className="bg-gradient-to-r from-[#7c3aed] to-[#a78bfa] bg-clip-text text-transparent">
-                no surprises
-              </span>
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-[#a1a1aa]">
-              Choose the plan that fits your freelance business. Upgrade or
-              downgrade anytime.
-            </p>
-          </div>
-
-          <div className="mt-16 grid gap-8 sm:grid-cols-2">
-            {/* SOLO Plan */}
-            <div
-              id="plan-solo"
-              className="group relative rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8 transition-all duration-300 hover:border-[#7c3aed]/30 hover:-translate-y-1"
+            <a
+              href="#how-it-works"
+              className="rounded-xl border border-[#2d2d4e] px-8 py-4 text-lg text-white transition-all hover:border-[#7c3aed]/50"
             >
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-[#a1a1aa]">
-                  Solo
-                </h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold">$29</span>
-                  <span className="text-[#71717a]">/month</span>
+              See how it works
+            </a>
+          </div>
+
+          {/* Trust badges */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-[#94a3b8]">
+            <span className="flex items-center gap-1.5">
+              <Check /> No credit card required
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check /> 7-day free trial
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check /> Cancel anytime
+            </span>
+          </div>
+
+          {/* Mock proposal card */}
+          <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-6 shadow-2xl shadow-purple-500/10">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-white">
+                Project Proposal — Website Redesign
+              </span>
+              <span className="rounded bg-[#7c3aed]/20 px-2 py-1 text-xs text-[#a78bfa]">
+                AI Generated ✓
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="rounded bg-green-500/10 px-2 py-1 text-xs text-green-400">
+                Scope Protected ✓
+              </span>
+            </div>
+            {/* Blurred content lines */}
+            <div className="mt-4 space-y-3">
+              <div className="h-2 w-full rounded-full bg-[#2d2d4e]" />
+              <div className="h-2 w-3/4 rounded-full bg-[#2d2d4e]" />
+              <div className="h-2 w-full rounded-full bg-[#2d2d4e]" />
+              <div className="h-2 w-1/2 rounded-full bg-[#2d2d4e]" />
+            </div>
+            <p className="mt-4 text-xs text-[#94a3b8]">
+              Client signed · Feb 22, 2025
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 3: TRUST BAR ═══════════════════ */}
+      <section className="border-y border-[#2d2d4e] bg-[#0a0a0a] py-10">
+        <p className="mb-6 text-center text-sm text-[#94a3b8]">
+          Trusted by freelancers from these companies
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
+          {["Toptal", "Fiverr", "Upwork", "99designs", "Contra"].map(
+            (name) => (
+              <span
+                key={name}
+                className="text-lg font-bold text-[#4a4a6a]"
+              >
+                {name}
+              </span>
+            )
+          )}
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 4: WHAT IS SCOPE CREEP ═══════════════════ */}
+      <section id="features" className="px-6 py-24">
+        <div className="fade-in mx-auto max-w-5xl">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#a78bfa]">
+            THE $3,000–$10,000 PROBLEM
+          </p>
+          <h2 className="mt-2 text-3xl font-bold sm:text-4xl">
+            What is scope creep — and why is it costing you
+            thousands?
+          </h2>
+
+          <div className="mt-12 grid gap-8 lg:grid-cols-2 lg:gap-12">
+            {/* Left: prose */}
+            <div className="rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-8">
+              <h3 className="mb-4 text-xl font-semibold text-white">
+                Scope creep, explained simply
+              </h3>
+              <div className="space-y-4 text-[#94a3b8] leading-relaxed">
+                <p>
+                  Scope creep is when a project slowly grows
+                  beyond what was originally agreed — without
+                  additional payment. A client hires you to
+                  design 5 pages, then casually asks for
+                  &ldquo;1 small thing&rdquo; that turns into
+                  weeks of extra work.
+                </p>
+                <p>
+                  It&apos;s not always malicious. Sometimes
+                  clients genuinely don&apos;t realize
+                  they&apos;re asking for more. But without a
+                  clear written agreement, you have no way to
+                  say no — and no way to get paid for yes.
+                </p>
+                <p>
+                  The result? Freelancers lose an estimated
+                  $3,000–$10,000 every year to unpaid work.
+                  That&apos;s a vacation. A new laptop. Months
+                  of rent.
+                </p>
+              </div>
+            </div>
+
+            {/* Right: stat cards */}
+            <div className="space-y-4">
+              {[
+                {
+                  number: "$3,000–$10,000",
+                  label: "Lost per year by average freelancer",
+                },
+                {
+                  number: "76%",
+                  label: "Of freelancers experience scope creep on every project",
+                },
+                {
+                  number: "30 sec",
+                  label: "Time to generate a scope-protecting proposal with ScopeLock",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.number}
+                  className="rounded-xl border border-[#2d2d4e] bg-[#0f0f0f] p-6"
+                >
+                  <p className="text-3xl font-bold text-[#7c3aed]">
+                    {stat.number}
+                  </p>
+                  <p className="mt-1 text-sm text-[#94a3b8]">
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 5: TWO USE CASES ═══════════════════ */}
+      <section className="bg-[#0a0a0a] px-6 py-24">
+        <div className="fade-in mx-auto max-w-4xl">
+          <h2 className="text-center text-3xl font-bold sm:text-4xl">
+            Use ScopeLock your way
+          </h2>
+          <p className="mt-4 text-center text-[#94a3b8]">
+            Whether you just want better proposals or full scope
+            protection — ScopeLock works for both.
+          </p>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {/* Card 1: AI Proposals */}
+            <div className="rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-8">
+              <div className="text-4xl">📝</div>
+              <h3 className="mt-4 text-xl font-semibold text-white">
+                Just need AI proposals?
+              </h3>
+              <p className="mt-2 text-[#94a3b8]">
+                Use ScopeLock as a powerful AI proposal
+                generator. Fill in 8 fields, get a professional
+                proposal with proper payment terms, milestones,
+                and kill fees. In 30 seconds.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-[#94a3b8]">
+                <li className="flex items-center gap-2">
+                  <Check /> Professional proposal in 30
+                  seconds
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Proper payment terms included
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Kill fee + late payment clauses
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Download as PDF instantly
+                </li>
+              </ul>
+            </div>
+
+            {/* Card 2: Full Protection */}
+            <div className="rounded-2xl border border-[#7c3aed]/40 bg-[#1a1a2e] p-8">
+              <div className="text-4xl">🛡️</div>
+              <span className="mt-3 mb-3 inline-block rounded bg-[#7c3aed]/20 px-2 py-1 text-xs text-[#a78bfa]">
+                Full Protection
+              </span>
+              <h3 className="text-xl font-semibold text-white">
+                Want complete scope protection?
+              </h3>
+              <p className="mt-2 text-[#94a3b8]">
+                Get proposals AND the full scope protection
+                suite. Client asks for extras? One click
+                generates a professional out-of-scope email.
+                Track every revision. Send change orders.
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-[#94a3b8]">
+                <li className="flex items-center gap-2">
+                  <Check /> Everything in AI proposals
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Scope alert email generator
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Revision tracker per project
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Change order generator
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check /> Digital client signing
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 6: HOW IT WORKS ═══════════════════ */}
+      <section id="how-it-works" className="px-6 py-24">
+        <div className="fade-in mx-auto max-w-4xl">
+          <h2 className="text-center text-3xl font-bold sm:text-4xl">
+            How it works
+          </h2>
+
+          <div className="relative mt-16 pl-6 sm:pl-0">
+            {/* Vertical line */}
+            <div className="absolute left-[19px] top-0 bottom-0 w-px bg-[#2d2d4e] sm:left-[19px]" />
+
+            {[
+              {
+                num: "01",
+                title: "Fill in your project details",
+                body: "Client name, project type, deliverables, timeline, price, and revision limit. 8 fields. Takes 2 minutes.",
+              },
+              {
+                num: "02",
+                title: "AI generates your proposal",
+                body: "GPT-4 writes a professional, legally protective proposal with scope of work, exclusions, revision policy, kill fee, and payment terms. Instantly.",
+              },
+              {
+                num: "03",
+                title: "Client signs, you're protected",
+                body: "Send a signing link. Client reviews and signs digitally. Both parties get a PDF. Scope is locked. You're protected.",
+              },
+              {
+                num: "04",
+                title: "Client asks for more? Handled.",
+                body: "When scope creep happens, click one button. AI drafts a professional, firm-but-friendly out-of-scope email in seconds. Stay paid. Keep the relationship.",
+              },
+            ].map((step) => (
+              <div
+                key={step.num}
+                className="relative mb-12 flex gap-6 last:mb-0"
+              >
+                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7c3aed] text-sm font-bold text-white">
+                  {step.num}
+                </div>
+                <div className="pt-1">
+                  <h3 className="text-xl font-semibold text-white">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-[#94a3b8]">
+                    {step.body}
+                  </p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <ul className="space-y-3">
+      {/* ═══════════════════ SECTION 7: PRICING ═══════════════════ */}
+      <section id="pricing" className="px-6 py-24">
+        <div className="fade-in mx-auto max-w-4xl">
+          <h2 className="text-center text-3xl font-bold sm:text-4xl">
+            Simple pricing
+          </h2>
+          <p className="mt-3 text-center text-[#94a3b8]">
+            Pays for itself the first time you prevent scope creep.
+          </p>
+          <p className="mt-4 text-center text-sm text-[#a78bfa]">
+            🔒 30-day money back guarantee
+          </p>
+
+          <div className="mx-auto mt-12 grid max-w-3xl gap-6 md:grid-cols-2">
+            {/* SOLO */}
+            <div className="rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-8">
+              <p className="text-lg font-semibold text-[#94a3b8]">
+                Solo
+              </p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold text-white">
+                  $19
+                </span>
+                <span className="text-lg text-[#94a3b8]">
+                  /month
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-[#94a3b8]">
+                7 days free, then $19/month
+              </p>
+
+              <div className="my-6 border-t border-[#2d2d4e]" />
+
+              <ul className="space-y-3 text-sm text-[#94a3b8]">
                 {[
-                  "Unlimited proposals",
+                  "Unlimited AI proposals",
                   "5 active projects",
-                  "E-signing",
+                  "PDF download",
                   "Revision tracker",
-                  "Scope alerts",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-[#d4d4d8]">
-                    <CheckIcon />
-                    {item}
+                  "Scope alert emails",
+                ].map((f) => (
+                  <li
+                    key={f}
+                    className="flex items-center gap-2"
+                  >
+                    <Check /> {f}
                   </li>
                 ))}
               </ul>
 
               <Link
-                id="plan-solo-cta"
                 href="/signup"
-                className="mt-8 block w-full rounded-xl border border-[#7c3aed] py-3 text-center text-sm font-semibold text-[#7c3aed] transition-all hover:bg-[#7c3aed] hover:text-white"
+                className="mt-6 block w-full rounded-xl border border-[#7c3aed] py-3 text-center text-sm font-semibold text-[#a78bfa] transition-all hover:bg-[#7c3aed] hover:text-white"
               >
                 Start Free Trial
               </Link>
             </div>
 
-            {/* PRO Plan */}
-            <div
-              id="plan-pro"
-              className="group relative rounded-2xl border-2 border-[#7c3aed] bg-[#1a1a1a] p-8 transition-all duration-300 hover:-translate-y-1"
-            >
-              {/* Badge */}
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="rounded-full bg-[#7c3aed] px-4 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow-lg shadow-[#7c3aed]/30">
+            {/* PRO */}
+            <div className="relative rounded-2xl border border-[#7c3aed] bg-[#1a1a2e] p-8">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-[#7c3aed] px-4 py-1 text-xs font-semibold text-white">
                   Most Popular
                 </span>
               </div>
 
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-[#a1a1aa]">
-                  Pro
-                </h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold">$49</span>
-                  <span className="text-[#71717a]">/month</span>
-                </div>
+              <p className="text-lg font-semibold text-[#a78bfa]">
+                Pro
+              </p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold text-white">
+                  $29
+                </span>
+                <span className="text-lg text-[#94a3b8]">
+                  /month
+                </span>
               </div>
+              <p className="mt-1 text-sm text-[#94a3b8]">
+                7 days free, then $29/month
+              </p>
 
-              <ul className="space-y-3">
+              <div className="my-6 border-t border-[#2d2d4e]" />
+
+              <ul className="space-y-3 text-sm text-[#94a3b8]">
                 {[
                   "Everything in Solo",
                   "Unlimited projects",
+                  "Digital client signing",
                   "Change order generator",
-                  "Custom branding",
+                  "Custom proposal branding",
                   "Priority support",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-[#d4d4d8]">
-                    <CheckIcon />
-                    {item}
+                ].map((f) => (
+                  <li
+                    key={f}
+                    className="flex items-center gap-2"
+                  >
+                    <Check /> {f}
                   </li>
                 ))}
               </ul>
 
               <Link
-                id="plan-pro-cta"
                 href="/signup"
-                className="mt-8 block w-full rounded-xl bg-[#7c3aed] py-3 text-center text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                className="mt-6 block w-full rounded-xl bg-[#7c3aed] py-3 text-center text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-purple-500/25"
               >
-                Start Free Trial
+                Start Free Trial →
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer
-        id="footer"
-        className="border-t border-[#1a1a1a] py-10"
-      >
-        <div className="mx-auto max-w-6xl px-6 text-center">
-          <p className="text-sm text-[#71717a]">
-            <span className="font-semibold text-[#7c3aed]">ScopeLock</span> ©
-            2025 · Built for freelancers
+      {/* ═══════════════════ SECTION 8: FAQ ═══════════════════ */}
+      <section id="faq" className="px-6 py-24">
+        <div className="fade-in mx-auto max-w-3xl">
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            Questions
+          </h2>
+
+          <div className="mt-10">
+            {faqs.map((faq, i) => (
+              <div
+                key={i}
+                className="border-b border-[#2d2d4e] py-5"
+              >
+                <button
+                  onClick={() =>
+                    setOpenFAQ(openFAQ === i ? null : i)
+                  }
+                  className="flex w-full items-center justify-between text-left"
+                >
+                  <span className="font-medium text-white pr-4">
+                    {faq.q}
+                  </span>
+                  <span className="shrink-0 text-xl text-[#7c3aed]">
+                    {openFAQ === i ? "−" : "+"}
+                  </span>
+                </button>
+                {openFAQ === i && (
+                  <p className="mt-3 text-sm leading-relaxed text-[#94a3b8]">
+                    {faq.a}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 9: FINAL CTA ═══════════════════ */}
+      <section className="border-t border-[#2d2d4e] bg-[#0a0a0a] px-6 py-32 text-center">
+        <div className="fade-in mx-auto max-w-2xl">
+          <h2 className="text-4xl font-bold sm:text-5xl">
+            Stop giving your work away for free.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-[#94a3b8] sm:text-xl">
+            Generate your first scope-protecting proposal in 30
+            seconds. Free for 7 days.
           </p>
+          <Link
+            href="/signup"
+            className="mt-8 inline-block rounded-2xl bg-[#7c3aed] px-10 py-5 text-lg font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-xl hover:shadow-purple-500/30 sm:text-xl"
+          >
+            Start Free Trial — No card required →
+          </Link>
+        </div>
+      </section>
+
+      {/* ═══════════════════ SECTION 10: FOOTER ═══════════════════ */}
+      <footer className="border-t border-[#2d2d4e] px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 sm:grid-cols-3">
+            {/* Left */}
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#7c3aed] text-sm font-bold text-white">
+                  S
+                </div>
+                <span className="text-lg font-bold text-white">
+                  ScopeLock
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-[#94a3b8]">
+                Protect your income.
+              </p>
+              <p className="mt-4 text-xs text-[#4a4a6a]">
+                Built for freelancers who value their time.
+              </p>
+            </div>
+
+            {/* Middle */}
+            <div>
+              <p className="text-sm font-semibold text-[#94a3b8]">
+                Product
+              </p>
+              <ul className="mt-3 space-y-2">
+                {[
+                  ["Features", "#features"],
+                  ["Pricing", "#pricing"],
+                  ["FAQ", "#faq"],
+                  ["Login", "/login"],
+                  ["Sign Up", "/signup"],
+                ].map(([label, href]) => (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className="text-sm text-[#4a4a6a] transition-colors hover:text-white"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Right */}
+            <div>
+              <p className="text-sm font-semibold text-[#94a3b8]">
+                Legal
+              </p>
+              <ul className="mt-3 space-y-2">
+                {["Privacy Policy", "Terms of Service"].map(
+                  (label) => (
+                    <li key={label}>
+                      <Link
+                        href="#"
+                        className="text-sm text-[#4a4a6a] transition-colors hover:text-white"
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  )
+                )}
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom */}
+          <div className="mt-8 border-t border-[#2d2d4e] pt-8 text-center">
+            <p className="text-xs text-[#4a4a6a]">
+              © 2025 ScopeLock. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </main>
