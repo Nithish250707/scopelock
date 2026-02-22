@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 /* ──────────────────────── Types ──────────────────────── */
@@ -17,6 +17,7 @@ interface Project {
     timeline: string;
     price: number;
     revision_limit: number;
+    revisions_used: number;
     payment_terms: string;
     proposal_content: string;
     status: "draft" | "sent" | "signed";
@@ -58,9 +59,7 @@ function StatusBadge({
 
     const c = config[status];
     const sizeClasses =
-        size === "lg"
-            ? "px-3.5 py-1.5 text-sm"
-            : "px-2.5 py-1 text-xs";
+        size === "lg" ? "px-3.5 py-1.5 text-sm" : "px-2.5 py-1 text-xs";
 
     return (
         <span
@@ -77,7 +76,6 @@ function StatusBadge({
 /* ──────────────────────── Proposal Renderer ──────────────────────── */
 
 function ProposalContent({ content }: { content: string }) {
-    // Parse proposal content, bolding numbered section headings
     const lines = content.split("\n");
 
     return (
@@ -85,12 +83,10 @@ function ProposalContent({ content }: { content: string }) {
             {lines.map((line, i) => {
                 const trimmed = line.trim();
 
-                // Empty line → spacer
                 if (!trimmed) {
                     return <div key={i} className="h-3" />;
                 }
 
-                // Numbered heading (e.g. "1. Project Overview" or "## 1. ...")
                 const isHeading =
                     /^#{1,3}\s/.test(trimmed) ||
                     /^\d+\.\s+[A-Z]/.test(trimmed) ||
@@ -110,7 +106,6 @@ function ProposalContent({ content }: { content: string }) {
                     );
                 }
 
-                // Bullet point
                 if (/^[-•*]\s/.test(trimmed)) {
                     const bulletText = trimmed.replace(/^[-•*]\s+/, "");
                     return (
@@ -131,7 +126,6 @@ function ProposalContent({ content }: { content: string }) {
                     );
                 }
 
-                // Regular paragraph — handle bold markdown
                 return (
                     <p
                         key={i}
@@ -242,6 +236,236 @@ function CalendarIcon() {
     );
 }
 
+/* ──────────────────────── Scope Alert Modal ──────────────────────── */
+
+function ScopeAlertModal({
+    project,
+    onClose,
+}: {
+    project: Project;
+    onClose: () => void;
+}) {
+    const [clientRequest, setClientRequest] = useState("");
+    const [generatedEmail, setGeneratedEmail] = useState("");
+    const [generating, setGenerating] = useState(false);
+    const [emailCopied, setEmailCopied] = useState(false);
+    const [error, setError] = useState("");
+
+    async function handleGenerate() {
+        if (!clientRequest.trim()) return;
+        setError("");
+        setGenerating(true);
+
+        try {
+            const {
+                data: { session },
+            } = await supabase.auth.getSession();
+
+            if (!session) return;
+
+            const res = await fetch("/api/scope-alert", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    projectId: project.id,
+                    clientRequest,
+                    originalDeliverables: project.deliverables,
+                    revisionLimit: project.revision_limit,
+                    revisionsUsed: project.revisions_used ?? 0,
+                    price: project.price,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error || "Failed to generate response");
+                return;
+            }
+
+            setGeneratedEmail(data.email);
+        } catch {
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setGenerating(false);
+        }
+    }
+
+    async function handleCopyEmail() {
+        try {
+            await navigator.clipboard.writeText(generatedEmail);
+            setEmailCopied(true);
+            setTimeout(() => setEmailCopied(false), 2500);
+        } catch {
+            const textArea = document.createElement("textarea");
+            textArea.value = generatedEmail;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            setEmailCopied(true);
+            setTimeout(() => setEmailCopied(false), 2500);
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                onClick={onClose}
+            />
+
+            {/* Modal */}
+            <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 shadow-2xl shadow-black/60 sm:p-8">
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute right-4 top-4 rounded-lg p-1.5 text-[#71717a] transition-colors hover:bg-[#2a2a2a] hover:text-white"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+
+                {/* Title */}
+                <div className="mb-6">
+                    <h2 className="text-xl font-bold text-white">
+                        Generate Scope Response
+                    </h2>
+                    <p className="mt-1 text-sm text-[#71717a]">
+                        Describe what the client is asking for, and we&apos;ll
+                        draft a professional response.
+                    </p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                    <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                {!generatedEmail ? (
+                    <>
+                        {/* Input area */}
+                        <div className="mb-6">
+                            <label
+                                htmlFor="clientRequest"
+                                className="mb-1.5 block text-sm font-medium text-[#d4d4d8]"
+                            >
+                                What is the client asking for?
+                            </label>
+                            <textarea
+                                id="clientRequest"
+                                rows={4}
+                                value={clientRequest}
+                                onChange={(e) =>
+                                    setClientRequest(e.target.value)
+                                }
+                                placeholder="e.g. Client wants to add an e-commerce section that wasn't in the original scope"
+                                className="w-full resize-none rounded-xl border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm text-white placeholder-[#52525b] outline-none transition-all focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]/50"
+                            />
+                        </div>
+
+                        {/* Generate button */}
+                        <button
+                            id="generate-scope-response-btn"
+                            onClick={handleGenerate}
+                            disabled={generating || !clientRequest.trim()}
+                            className="w-full rounded-xl bg-[#7c3aed] py-3 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {generating ? (
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg
+                                        className="h-4 w-4 animate-spin"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Generating response...
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
+                                    </svg>
+                                    Generate Response
+                                </div>
+                            )}
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        {/* Generated email — editable */}
+                        <div className="mb-6">
+                            <label className="mb-1.5 block text-sm font-medium text-[#d4d4d8]">
+                                Generated Email{" "}
+                                <span className="text-[#71717a]">
+                                    (editable)
+                                </span>
+                            </label>
+                            <textarea
+                                id="generated-email"
+                                rows={12}
+                                value={generatedEmail}
+                                onChange={(e) =>
+                                    setGeneratedEmail(e.target.value)
+                                }
+                                className="w-full resize-y rounded-xl border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3 text-sm leading-relaxed text-white outline-none transition-all focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]/50"
+                            />
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                id="copy-email-btn"
+                                onClick={handleCopyEmail}
+                                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${emailCopied
+                                        ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
+                                        : "bg-[#7c3aed] text-white hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                                    }`}
+                            >
+                                {emailCopied ? (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg>
+                                        Copy Email
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                id="close-modal-btn"
+                                onClick={onClose}
+                                className="flex-1 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] py-3 text-sm font-semibold text-[#a1a1aa] transition-all hover:border-[#3f3f46] hover:text-white"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
 /* ──────────────────────── Proposal View Page ──────────────────────── */
 
 export default function ProposalViewPage() {
@@ -252,38 +476,38 @@ export default function ProposalViewPage() {
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [showScopeModal, setShowScopeModal] = useState(false);
+    const [loggingRevision, setLoggingRevision] = useState(false);
 
-    useEffect(() => {
-        async function load() {
-            // Auth check
-            const {
-                data: { session },
-            } = await supabase.auth.getSession();
+    const loadProject = useCallback(async () => {
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
 
-            if (!session) {
-                router.push("/login");
-                return;
-            }
-
-            // Fetch project
-            const { data, error } = await supabase
-                .from("projects")
-                .select("*")
-                .eq("id", projectId)
-                .eq("user_id", session.user.id)
-                .single();
-
-            if (error || !data) {
-                router.push("/dashboard");
-                return;
-            }
-
-            setProject(data as Project);
-            setLoading(false);
+        if (!session) {
+            router.push("/login");
+            return;
         }
 
-        load();
+        const { data, error } = await supabase
+            .from("projects")
+            .select("*")
+            .eq("id", projectId)
+            .eq("user_id", session.user.id)
+            .single();
+
+        if (error || !data) {
+            router.push("/dashboard");
+            return;
+        }
+
+        setProject(data as Project);
+        setLoading(false);
     }, [projectId, router]);
+
+    useEffect(() => {
+        loadProject();
+    }, [loadProject]);
 
     async function handleCopy() {
         if (!project) return;
@@ -292,7 +516,6 @@ export default function ProposalViewPage() {
             setCopied(true);
             setTimeout(() => setCopied(false), 2500);
         } catch {
-            // Fallback for older browsers
             const textArea = document.createElement("textarea");
             textArea.value = project.proposal_content;
             document.body.appendChild(textArea);
@@ -306,6 +529,24 @@ export default function ProposalViewPage() {
 
     function handleDownloadPDF() {
         window.print();
+    }
+
+    async function handleLogRevision() {
+        if (!project) return;
+        setLoggingRevision(true);
+
+        const newCount = (project.revisions_used ?? 0) + 1;
+
+        const { error } = await supabase
+            .from("projects")
+            .update({ revisions_used: newCount })
+            .eq("id", project.id);
+
+        if (!error) {
+            setProject({ ...project, revisions_used: newCount });
+        }
+
+        setLoggingRevision(false);
     }
 
     // ── Loading state ──
@@ -344,8 +585,23 @@ export default function ProposalViewPage() {
         { month: "long", day: "numeric", year: "numeric" }
     );
 
+    const revisionsUsed = project.revisions_used ?? 0;
+    const revisionsMaxed = revisionsUsed >= project.revision_limit;
+    const revisionPercentage = Math.min(
+        (revisionsUsed / project.revision_limit) * 100,
+        100
+    );
+
     return (
         <div className="min-h-screen bg-[#0f0f0f] print:bg-white print:text-black">
+            {/* ─── Scope Alert Modal ─── */}
+            {showScopeModal && (
+                <ScopeAlertModal
+                    project={project}
+                    onClose={() => setShowScopeModal(false)}
+                />
+            )}
+
             {/* ─── TOP NAVBAR ─── */}
             <nav className="sticky top-0 z-50 border-b border-[#1a1a1a] bg-[#0f0f0f]/80 backdrop-blur-xl print:hidden">
                 <div className="mx-auto flex max-w-7xl items-center px-6 py-4">
@@ -455,6 +711,29 @@ export default function ProposalViewPage() {
                             />
                         </div>
 
+                        {/* ── Scope Protection Section ── */}
+                        <div className="mt-6 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 sm:p-8 print:hidden">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-bold text-white">
+                                        Scope Protection
+                                    </h2>
+                                    <p className="mt-1 text-sm text-[#71717a]">
+                                        Handle out-of-scope requests
+                                        professionally
+                                    </p>
+                                </div>
+                                <button
+                                    id="scope-alert-btn"
+                                    onClick={() => setShowScopeModal(true)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-[#7c3aed] px-5 py-2.5 text-sm font-semibold text-[#7c3aed] transition-all hover:bg-[#7c3aed]/10 hover:shadow-lg hover:shadow-[#7c3aed]/10"
+                                >
+                                    <span className="text-base">⚠️</span>
+                                    Client Asked For Something Extra?
+                                </button>
+                            </div>
+                        </div>
+
                         {/* ── Bottom Actions ── */}
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
                             <button
@@ -484,79 +763,157 @@ export default function ProposalViewPage() {
 
                     {/* ── RIGHT: Project Details Card ── */}
                     <div className="print:hidden">
-                        <div className="sticky top-20 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6">
-                            <h2 className="mb-6 text-sm font-semibold uppercase tracking-wider text-[#7c3aed]">
-                                Project Details
-                            </h2>
+                        <div className="sticky top-20 space-y-6">
+                            {/* Project Details Card */}
+                            <div className="rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6">
+                                <h2 className="mb-6 text-sm font-semibold uppercase tracking-wider text-[#7c3aed]">
+                                    Project Details
+                                </h2>
 
-                            {/* Price — prominent */}
-                            <div className="mb-6 rounded-xl bg-[#7c3aed]/10 p-4 text-center ring-1 ring-[#7c3aed]/20">
-                                <p className="text-xs text-[#a1a1aa]">
-                                    Project Value
-                                </p>
-                                <p className="mt-1 text-3xl font-extrabold text-white">
-                                    {formattedPrice}
-                                </p>
+                                {/* Price — prominent */}
+                                <div className="mb-6 rounded-xl bg-[#7c3aed]/10 p-4 text-center ring-1 ring-[#7c3aed]/20">
+                                    <p className="text-xs text-[#a1a1aa]">
+                                        Project Value
+                                    </p>
+                                    <p className="mt-1 text-3xl font-extrabold text-white">
+                                        {formattedPrice}
+                                    </p>
+                                </div>
+
+                                {/* Details list */}
+                                <div className="space-y-5">
+                                    <DetailRow
+                                        label="Client Name"
+                                        value={project.client_name}
+                                        icon={<UserIcon />}
+                                    />
+
+                                    {project.client_email && (
+                                        <DetailRow
+                                            label="Client Email"
+                                            value={
+                                                <a
+                                                    href={`mailto:${project.client_email}`}
+                                                    className="text-[#7c3aed] transition-colors hover:text-[#8b5cf6]"
+                                                >
+                                                    {project.client_email}
+                                                </a>
+                                            }
+                                            icon={<MailIcon />}
+                                        />
+                                    )}
+
+                                    {project.timeline && (
+                                        <DetailRow
+                                            label="Timeline"
+                                            value={project.timeline}
+                                            icon={<ClockIcon />}
+                                        />
+                                    )}
+
+                                    <DetailRow
+                                        label="Payment Terms"
+                                        value={project.payment_terms}
+                                        icon={<CreditCardIcon />}
+                                    />
+
+                                    <DetailRow
+                                        label="Status"
+                                        value={
+                                            <StatusBadge
+                                                status={project.status}
+                                            />
+                                        }
+                                        icon={<DollarIcon />}
+                                    />
+
+                                    <DetailRow
+                                        label="Created"
+                                        value={formattedDate}
+                                        icon={<CalendarIcon />}
+                                    />
+                                </div>
                             </div>
 
-                            {/* Details list */}
-                            <div className="space-y-5">
-                                <DetailRow
-                                    label="Client Name"
-                                    value={project.client_name}
-                                    icon={<UserIcon />}
-                                />
+                            {/* ── Revision Tracker Card ── */}
+                            <div className="rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-[#7c3aed]">
+                                        Revision Tracker
+                                    </h2>
+                                    {revisionsMaxed && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-medium text-red-400 ring-1 ring-red-500/20">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                                <line x1="12" y1="9" x2="12" y2="13" />
+                                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                                            </svg>
+                                            Limit Reached
+                                        </span>
+                                    )}
+                                </div>
 
-                                {project.client_email && (
-                                    <DetailRow
-                                        label="Client Email"
-                                        value={
-                                            <a
-                                                href={`mailto:${project.client_email}`}
-                                                className="text-[#7c3aed] transition-colors hover:text-[#8b5cf6]"
-                                            >
-                                                {project.client_email}
-                                            </a>
-                                        }
-                                        icon={<MailIcon />}
-                                    />
-                                )}
+                                {/* Progress display */}
+                                <div className="mb-4">
+                                    <div className="flex items-baseline justify-between mb-2">
+                                        <span className="text-2xl font-bold text-white">
+                                            {revisionsUsed}
+                                        </span>
+                                        <span className="text-sm text-[#71717a]">
+                                            of {project.revision_limit}{" "}
+                                            revisions
+                                        </span>
+                                    </div>
 
-                                {project.timeline && (
-                                    <DetailRow
-                                        label="Timeline"
-                                        value={project.timeline}
-                                        icon={<ClockIcon />}
-                                    />
-                                )}
-
-                                <DetailRow
-                                    label="Revisions"
-                                    value={`0 / ${project.revision_limit} used`}
-                                    icon={<RefreshIcon />}
-                                />
-
-                                <DetailRow
-                                    label="Payment Terms"
-                                    value={project.payment_terms}
-                                    icon={<CreditCardIcon />}
-                                />
-
-                                <DetailRow
-                                    label="Status"
-                                    value={
-                                        <StatusBadge
-                                            status={project.status}
+                                    {/* Progress bar */}
+                                    <div className="h-2 w-full rounded-full bg-[#2a2a2a]">
+                                        <div
+                                            className={`h-full rounded-full transition-all duration-500 ${revisionsMaxed
+                                                    ? "bg-red-500"
+                                                    : revisionPercentage >= 66
+                                                        ? "bg-yellow-500"
+                                                        : "bg-[#7c3aed]"
+                                                }`}
+                                            style={{
+                                                width: `${revisionPercentage}%`,
+                                            }}
                                         />
-                                    }
-                                    icon={<DollarIcon />}
-                                />
+                                    </div>
+                                </div>
 
-                                <DetailRow
-                                    label="Created"
-                                    value={formattedDate}
-                                    icon={<CalendarIcon />}
-                                />
+                                {/* Log Revision button */}
+                                <button
+                                    id="log-revision-btn"
+                                    onClick={handleLogRevision}
+                                    disabled={loggingRevision}
+                                    className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${revisionsMaxed
+                                            ? "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                                            : "border border-[#2a2a2a] bg-[#0f0f0f] text-[#a1a1aa] hover:border-[#7c3aed]/30 hover:text-white"
+                                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                                >
+                                    {loggingRevision ? (
+                                        <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                        </svg>
+                                    )}
+                                    {revisionsMaxed
+                                        ? "Log Revision (Over Limit)"
+                                        : "+ Log Revision"}
+                                </button>
+
+                                {revisionsMaxed && (
+                                    <p className="mt-3 text-xs text-red-400/80 text-center">
+                                        All revisions have been used. Further
+                                        changes should be billed as change
+                                        orders.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
