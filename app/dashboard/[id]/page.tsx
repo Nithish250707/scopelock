@@ -22,6 +22,9 @@ interface Project {
     proposal_content: string;
     status: "draft" | "sent" | "signed";
     created_at: string;
+    signing_token: string | null;
+    signed_at: string | null;
+    client_signature: string | null;
 }
 
 /* ──────────────────────── Status Badge ──────────────────────── */
@@ -466,6 +469,252 @@ function ScopeAlertModal({
     );
 }
 
+/* ──────────────────────── Send to Client Modal ──────────────────────── */
+
+function SendToClientModal({
+    project,
+    onClose,
+    onSent,
+}: {
+    project: Project;
+    onClose: () => void;
+    onSent: (token: string) => void;
+}) {
+    const [signingUrl, setSigningUrl] = useState("");
+    const [generating, setGenerating] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        // If project already has a signing token, use it
+        if (project.signing_token) {
+            const url = `${window.location.origin}/proposal/${project.signing_token}`;
+            setSigningUrl(url);
+        }
+    }, [project.signing_token]);
+
+    async function handleGenerateLink() {
+        setError("");
+        setGenerating(true);
+
+        try {
+            const token = crypto.randomUUID();
+
+            const { error: updateError } = await supabase
+                .from("projects")
+                .update({
+                    signing_token: token,
+                    status: "sent" as const,
+                })
+                .eq("id", project.id);
+
+            if (updateError) {
+                setError("Failed to generate link: " + updateError.message);
+                return;
+            }
+
+            const url = `${window.location.origin}/proposal/${token}`;
+            setSigningUrl(url);
+            onSent(token);
+        } catch {
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setGenerating(false);
+        }
+    }
+
+    async function handleCopyLink() {
+        try {
+            await navigator.clipboard.writeText(signingUrl);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2500);
+        } catch {
+            const textArea = document.createElement("textarea");
+            textArea.value = signingUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2500);
+        }
+    }
+
+    const mailtoLink = project.client_email
+        ? `mailto:${project.client_email}?subject=${encodeURIComponent(
+            `Project Proposal: ${project.title}`
+        )}&body=${encodeURIComponent(
+            `Hi ${project.client_name},\n\nPlease review and sign the proposal for "${project.title}" using the link below:\n\n${signingUrl}\n\nLet me know if you have any questions.\n\nBest regards`
+        )}`
+        : "";
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                onClick={onClose}
+            />
+
+            {/* Modal */}
+            <div className="relative z-10 w-full max-w-lg rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 shadow-2xl shadow-black/60 sm:p-8">
+                {/* Close button */}
+                <button
+                    onClick={onClose}
+                    className="absolute right-4 top-4 rounded-lg p-1.5 text-[#71717a] transition-colors hover:bg-[#2a2a2a] hover:text-white"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+
+                {/* Title */}
+                <div className="mb-6">
+                    <h2 className="text-xl font-bold text-white">
+                        Send to Client
+                    </h2>
+                    <p className="mt-1 text-sm text-[#71717a]">
+                        Generate a signing link to send to{" "}
+                        <span className="text-white font-medium">
+                            {project.client_name}
+                        </span>
+                    </p>
+                </div>
+
+                {/* Error */}
+                {error && (
+                    <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                {!signingUrl ? (
+                    /* Generate link state */
+                    <>
+                        <div className="mb-6 rounded-xl bg-[#0f0f0f] p-4 text-sm text-[#a1a1aa]">
+                            <p className="mb-2">
+                                This will generate a unique link for your client to:
+                            </p>
+                            <ul className="space-y-1 pl-4">
+                                <li className="flex items-center gap-2">
+                                    <span className="h-1 w-1 rounded-full bg-[#7c3aed]" />
+                                    View the full proposal
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="h-1 w-1 rounded-full bg-[#7c3aed]" />
+                                    Review project details & terms
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="h-1 w-1 rounded-full bg-[#7c3aed]" />
+                                    Digitally sign and accept
+                                </li>
+                            </ul>
+                        </div>
+
+                        <button
+                            id="generate-signing-link-btn"
+                            onClick={handleGenerateLink}
+                            disabled={generating}
+                            className="w-full rounded-xl bg-[#7c3aed] py-3 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {generating ? (
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg
+                                        className="h-4 w-4 animate-spin"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    Generating...
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    </svg>
+                                    Generate Signing Link
+                                </div>
+                            )}
+                        </button>
+                    </>
+                ) : (
+                    /* Link generated state */
+                    <>
+                        {/* URL display */}
+                        <div className="mb-6">
+                            <label className="mb-1.5 block text-sm font-medium text-[#d4d4d8]">
+                                Signing Link
+                            </label>
+                            <div className="flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#0f0f0f] px-4 py-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 text-[#7c3aed]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                </svg>
+                                <span className="truncate text-sm text-[#a1a1aa]">
+                                    {signingUrl}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                id="copy-signing-link-btn"
+                                onClick={handleCopyLink}
+                                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${linkCopied
+                                        ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
+                                        : "bg-[#7c3aed] text-white hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                                    }`}
+                            >
+                                {linkCopied ? (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg>
+                                        Copy Link
+                                    </>
+                                )}
+                            </button>
+
+                            {project.client_email && (
+                                <a
+                                    id="send-via-email-btn"
+                                    href={mailtoLink}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] py-3 text-sm font-semibold text-[#a1a1aa] transition-all hover:border-[#3f3f46] hover:text-white"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                        <polyline points="22,6 12,13 2,6" />
+                                    </svg>
+                                    Send via Email
+                                </a>
+                            )}
+                        </div>
+
+                        <p className="mt-4 text-center text-xs text-[#52525b]">
+                            Your client can view and sign the proposal using this link.
+                            The proposal status will update automatically.
+                        </p>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
 /* ──────────────────────── Proposal View Page ──────────────────────── */
 
 export default function ProposalViewPage() {
@@ -477,6 +726,7 @@ export default function ProposalViewPage() {
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     const [showScopeModal, setShowScopeModal] = useState(false);
+    const [showSendModal, setShowSendModal] = useState(false);
     const [loggingRevision, setLoggingRevision] = useState(false);
 
     const loadProject = useCallback(async () => {
@@ -706,6 +956,21 @@ export default function ProposalViewPage() {
                 />
             )}
 
+            {/* ─── Send to Client Modal ─── */}
+            {showSendModal && (
+                <SendToClientModal
+                    project={project}
+                    onClose={() => setShowSendModal(false)}
+                    onSent={(token) => {
+                        setProject({
+                            ...project,
+                            signing_token: token,
+                            status: "sent",
+                        });
+                    }}
+                />
+            )}
+
             {/* ─── TOP NAVBAR ─── */}
             <nav className="sticky top-0 z-50 border-b border-[#1a1a1a] bg-[#0f0f0f]/80 backdrop-blur-xl print:hidden">
                 <div className="mx-auto flex max-w-7xl items-center px-6 py-4">
@@ -842,6 +1107,7 @@ export default function ProposalViewPage() {
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
                             <button
                                 id="send-to-client-btn"
+                                onClick={() => setShowSendModal(true)}
                                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#7c3aed] px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
