@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function SignupPage() {
@@ -12,6 +12,14 @@ export default function SignupPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) router.push("/dashboard");
+        };
+        checkSession();
+    }, [router]);
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();

@@ -429,8 +429,8 @@ function ScopeAlertModal({
                                 id="copy-email-btn"
                                 onClick={handleCopyEmail}
                                 className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${emailCopied
-                                        ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
-                                        : "bg-[#7c3aed] text-white hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                                    ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
+                                    : "bg-[#7c3aed] text-white hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
                                     }`}
                             >
                                 {emailCopied ? (
@@ -593,7 +593,111 @@ export default function ProposalViewPage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#0f0f0f] print:bg-white print:text-black">
+        <div className="min-h-screen bg-[#0f0f0f]">
+            {/* ─── Print-specific CSS ─── */}
+            <style jsx global>{`
+                @media print {
+                    /* Hide everything except proposal content */
+                    nav, header, button, .sidebar,
+                    .no-print { display: none !important; }
+
+                    body {
+                        background: white !important;
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+
+                    /* Show only proposal content */
+                    .proposal-print {
+                        font-family: 'Georgia', serif !important;
+                        font-size: 11pt !important;
+                        line-height: 1.6 !important;
+                        color: #000000 !important;
+                        max-width: 750px !important;
+                        margin: 0 auto !important;
+                        padding: 40px !important;
+                        background: white !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                    }
+
+                    /* Page setup */
+                    @page {
+                        margin: 1in;
+                        size: A4;
+                    }
+
+                    /* Section headers */
+                    .proposal-print h1 {
+                        font-size: 20pt !important;
+                        font-weight: bold !important;
+                        text-align: center !important;
+                        margin-bottom: 4px !important;
+                        color: #000 !important;
+                    }
+                    .proposal-print .meta-info {
+                        text-align: center;
+                        font-size: 10pt;
+                        color: #555;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid #000;
+                        padding-bottom: 16px;
+                    }
+                    .proposal-print h2 {
+                        font-size: 11pt !important;
+                        font-weight: bold !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 1px !important;
+                        margin-top: 24px !important;
+                        margin-bottom: 8px !important;
+                        border-bottom: 1px solid #ccc !important;
+                        padding-bottom: 4px !important;
+                        color: #000 !important;
+                    }
+                    .proposal-print h3 {
+                        font-size: 11pt !important;
+                        font-weight: bold !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 1px !important;
+                        margin-top: 24px !important;
+                        margin-bottom: 8px !important;
+                        border-bottom: 1px solid #ccc !important;
+                        padding-bottom: 4px !important;
+                        color: #000 !important;
+                    }
+                    .proposal-print p, .proposal-print li, .proposal-print span, .proposal-print div {
+                        font-size: 10.5pt !important;
+                        color: #222 !important;
+                        margin-bottom: 6px !important;
+                    }
+                    .proposal-print strong {
+                        color: #000 !important;
+                    }
+                    .proposal-print .divider {
+                        border-top: 1px solid #ddd;
+                        margin: 20px 0;
+                    }
+                    .proposal-print .signature-block {
+                        margin-top: 40px;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 40px;
+                    }
+                    .proposal-print .signature-line {
+                        border-top: 1px solid #000;
+                        padding-top: 8px;
+                        font-size: 10pt;
+                    }
+
+                    /* Hide all non-proposal elements */
+                    .min-h-screen { background: white !important; }
+                    .print-hide-all > *:not(.proposal-print-wrapper) { display: none !important; }
+                    .proposal-print-wrapper { display: block !important; }
+                    .proposal-print-wrapper > .no-print { display: none !important; }
+                }
+            `}</style>
             {/* ─── Scope Alert Modal ─── */}
             {showScopeModal && (
                 <ScopeAlertModal
@@ -651,10 +755,10 @@ export default function ProposalViewPage() {
                 {/* ── Two Column Layout ── */}
                 <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
                     {/* ── LEFT: Proposal Content ── */}
-                    <div>
-                        <div className="rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 sm:p-8">
+                    <div className="proposal-print-wrapper">
+                        <div className="rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-6 sm:p-8 proposal-print">
                             {/* Section header */}
-                            <div className="mb-6 flex items-center justify-between">
+                            <div className="mb-6 flex items-center justify-between no-print">
                                 <h2 className="text-lg font-bold text-white">
                                     Your Proposal
                                 </h2>
@@ -664,8 +768,8 @@ export default function ProposalViewPage() {
                                         id="copy-proposal-btn"
                                         onClick={handleCopy}
                                         className={`inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all ${copied
-                                                ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
-                                                : "bg-[#7c3aed]/10 text-[#7c3aed] ring-1 ring-[#7c3aed]/20 hover:bg-[#7c3aed]/20"
+                                            ? "bg-green-500/10 text-green-400 ring-1 ring-green-500/20"
+                                            : "bg-[#7c3aed]/10 text-[#7c3aed] ring-1 ring-[#7c3aed]/20 hover:bg-[#7c3aed]/20"
                                             }`}
                                     >
                                         {copied ? (
@@ -703,7 +807,7 @@ export default function ProposalViewPage() {
                             </div>
 
                             {/* Divider */}
-                            <div className="mb-6 h-px bg-[#2a2a2a]" />
+                            <div className="mb-6 h-px bg-[#2a2a2a] no-print" />
 
                             {/* Proposal text */}
                             <ProposalContent
@@ -869,10 +973,10 @@ export default function ProposalViewPage() {
                                     <div className="h-2 w-full rounded-full bg-[#2a2a2a]">
                                         <div
                                             className={`h-full rounded-full transition-all duration-500 ${revisionsMaxed
-                                                    ? "bg-red-500"
-                                                    : revisionPercentage >= 66
-                                                        ? "bg-yellow-500"
-                                                        : "bg-[#7c3aed]"
+                                                ? "bg-red-500"
+                                                : revisionPercentage >= 66
+                                                    ? "bg-yellow-500"
+                                                    : "bg-[#7c3aed]"
                                                 }`}
                                             style={{
                                                 width: `${revisionPercentage}%`,
@@ -887,8 +991,8 @@ export default function ProposalViewPage() {
                                     onClick={handleLogRevision}
                                     disabled={loggingRevision}
                                     className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all ${revisionsMaxed
-                                            ? "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                                            : "border border-[#2a2a2a] bg-[#0f0f0f] text-[#a1a1aa] hover:border-[#7c3aed]/30 hover:text-white"
+                                        ? "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                                        : "border border-[#2a2a2a] bg-[#0f0f0f] text-[#a1a1aa] hover:border-[#7c3aed]/30 hover:text-white"
                                         } disabled:cursor-not-allowed disabled:opacity-50`}
                                 >
                                     {loggingRevision ? (

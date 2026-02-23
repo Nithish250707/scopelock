@@ -39,6 +39,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // ── Fetch freelancer profile ──
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single();
+
+        const freelancerName = profile?.full_name || user.user_metadata?.full_name || "Freelancer";
+        const userEmail = user.email || "";
+
         // ── Parse form data ──
         const body = await request.json();
         const {
@@ -62,34 +72,177 @@ export async function POST(request: NextRequest) {
         }
 
         // ── Generate proposal via OpenAI ──
-        const prompt = `You are a professional freelance contract writer.
-Generate a detailed project proposal for a freelancer.
+        const revisionLimitNum = parseInt(revisionLimit) || 2;
 
-Client Name: ${clientName}
-Project Type: ${projectType}
-Project Title: ${title}
+        // Project-type-specific exclusions
+        const projectSpecificExclusions: Record<string, string[]> = {
+            'Web Design': [
+                'Content writing or copywriting',
+                'Stock photo licensing fees',
+                'Domain registration or hosting fees',
+                'Third-party plugin licenses',
+                'Post-launch bug fixes after 14 days',
+                'Social media graphics'
+            ],
+            'Web Development': [
+                'UI/UX design unless specified',
+                'Content population into CMS',
+                'Third-party API costs or licenses',
+                'Server setup beyond basic deployment',
+                'Ongoing maintenance after delivery',
+                'Browser testing beyond Chrome/Firefox/Safari'
+            ],
+            'Mobile App': [
+                'App Store/Play Store submission fees',
+                'Backend/API development unless specified',
+                'UI/UX design unless specified',
+                'Push notification service costs',
+                'Third-party SDK licenses',
+                'Post-launch updates or new features'
+            ],
+            'Copywriting': [
+                'Design or visual layout work',
+                'SEO keyword research',
+                'Translation to other languages',
+                'Printing or production costs',
+                'Distribution or publishing',
+                'Social media management'
+            ],
+            'Graphic Design': [
+                'Copywriting or text content',
+                'Stock image licensing',
+                'Printing or production costs',
+                'Animation or motion graphics',
+                'Website implementation',
+                'Social media management'
+            ],
+            'SEO': [
+                'Content writing unless specified',
+                'Paid advertising management',
+                'Website development changes',
+                'Link building outreach',
+                'Social media management',
+                'Guaranteed ranking results'
+            ],
+            'Video Editing': [
+                'Original footage filming',
+                'Script writing or voiceover',
+                'Music licensing fees',
+                'Motion graphics unless specified',
+                'Color grading unless specified',
+                'Distribution or publishing'
+            ],
+            'Social Media': [
+                'Paid advertising budget',
+                'Content photography or videography',
+                'Website updates or changes',
+                'Customer service or DM responses',
+                'Influencer outreach or fees',
+                'Guaranteed follower growth'
+            ]
+        };
+
+        const exclusions = projectSpecificExclusions[projectType]
+            || projectSpecificExclusions['Web Design']!;
+        const exclusionsList = exclusions.map((e, i) => `${i + 1}. ${e}`).join('\n');
+
+        // Calculate suggested hourly rate for revision overages
+        const projectValue = parseInt(price.replace(/\D/g, '')) || 0;
+        const hourlyRate = Math.round(projectValue / 20) || 75;
+
+        const prompt = `You are an expert freelance contract writer used by top professionals on Toptal and 99designs.
+Generate a premium, legally protective project proposal.
+
+Freelancer: ${freelancerName}
+Email: ${userEmail}
+Client: ${clientName}
+Project: ${title}
+Type: ${projectType}
 Deliverables: ${deliverables}
 Timeline: ${timeline}
-Price: ${price}
-Revisions Included: ${revisionLimit}
-Payment Terms: ${paymentTerms}
+Investment: ${price}
+Revisions: ${revisionLimit}
+Payment: ${paymentTerms}
 
-Write a proposal with these exact sections:
-1. Project Overview (2-3 sentences)
-2. Scope of Work (detailed bullet points of what IS included)
-3. What Is NOT Included (4-5 specific exclusions for this project type — be very specific)
-4. Revision Policy (firm language referencing the exact revision limit)
-5. Timeline & Milestones
-6. Investment & Payment Schedule (include 5% late payment fee per week)
-7. Project Kill Fee (50% of remaining balance if client cancels)
+Generate a proposal with this EXACT structure and formatting:
 
-Tone: Professional, confident, protective of freelancer.`;
+---
+PROJECT PROPOSAL
+Prepared by: ${freelancerName}
+Prepared for: ${clientName}
+Date: [current date]
+Project: ${title}
+---
+
+EXECUTIVE SUMMARY
+Write 2-3 compelling sentences that show you understand the client's business goal, not just the technical task. Sound like a strategic partner, not just a vendor.
+
+SCOPE OF WORK
+Numbered list of exactly what is delivered.
+Be hyper-specific. No vague language.
+Each item on its own line with clear deliverable.
+
+EXPLICITLY NOT INCLUDED
+(This section is critical — use these EXACT exclusions)
+${exclusionsList}
+
+REVISION POLICY
+${revisionLimit} rounds of revisions are included.
+Define clearly what counts as a revision vs a new request. State clearly that revision ${revisionLimitNum + 1} and beyond will be billed at $${hourlyRate}/hour.
+Make this section firm but professional.
+
+TIMELINE & MILESTONES
+Break ${timeline} into logical phases:
+Phase 1 (Discovery & Planning): X days
+Phase 2 (Design/Development): X days
+Phase 3 (Review & Revisions): X days
+Phase 4 (Final Delivery): X days
+Include: client must provide feedback within 3 business days or timeline extends accordingly.
+
+INVESTMENT
+Total: ${price}
+Payment schedule based on ${paymentTerms}
+
+Include these clauses in professional language:
+- Late payment: 5% fee per week on overdue amounts
+- Expense reimbursement: pre-approved expenses billed at cost
+- Currency: USD
+
+PROJECT CANCELLATION
+If client cancels after work begins:
+- Before 25% complete: 25% of total fee
+- 25-50% complete: 50% of total fee
+- After 50% complete: 75% of total fee
+All work completed to date will be delivered upon receipt of cancellation fee.
+
+INTELLECTUAL PROPERTY
+Full ownership transfers to client only upon receipt of final payment in full.
+Freelancer retains right to display work in portfolio unless client requests otherwise in writing.
+
+ACCEPTANCE
+This proposal is valid for 14 days from date above.
+By signing below, both parties agree to the terms outlined in this proposal.
+
+Client signature: _______________ Date: _______
+${freelancerName} signature: _______ Date: _______
+
+---
+Prepared with ScopeLock · scopelock.dev
+---
+
+IMPORTANT FORMATTING RULES:
+- Use clear section headers in CAPS
+- Use dashes --- as dividers between sections
+- Be specific, not generic
+- Sound like a $5,000+ proposal, not a $500 one
+- Every section should make the client think 'this person is a true professional'
+- Total length: 600-900 words`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 3000,
         });
 
         const proposalContent =
