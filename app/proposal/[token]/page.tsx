@@ -2,11 +2,6 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /* ──────────────────────── Types ──────────────────────── */
 
@@ -137,27 +132,29 @@ export default function PublicProposalPage() {
 
     useEffect(() => {
         async function loadProposal() {
-            const { data, error } = await supabase
-                .from("projects")
-                .select("*")
-                .eq("signing_token", token)
-                .single();
+            try {
+                const res = await fetch(`/api/proposal/${token}`);
+                const data = await res.json();
 
-            if (error || !data) {
+                if (!res.ok || !data.project) {
+                    setNotFound(true);
+                    setLoading(false);
+                    return;
+                }
+
+                const proj = data.project as Project;
+                setProject(proj);
+
+                // If already signed, show signed state
+                if (proj.status === "signed" && proj.client_signature) {
+                    setSigned(true);
+                }
+
+                setLoading(false);
+            } catch {
                 setNotFound(true);
                 setLoading(false);
-                return;
             }
-
-            const proj = data as Project;
-            setProject(proj);
-
-            // If already signed, show signed state
-            if (proj.status === "signed" && proj.client_signature) {
-                setSigned(true);
-            }
-
-            setLoading(false);
         }
 
         if (token) loadProposal();
@@ -169,17 +166,18 @@ export default function PublicProposalPage() {
         setSigning(true);
 
         try {
-            const { error: updateError } = await supabase
-                .from("projects")
-                .update({
-                    status: "signed",
-                    signed_at: new Date().toISOString(),
-                    client_signature: signatureName.trim(),
-                })
-                .eq("signing_token", token);
+            const res = await fetch(`/api/proposal/${token}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    clientSignature: signatureName.trim(),
+                }),
+            });
 
-            if (updateError) {
-                setError("Failed to sign proposal. Please try again.");
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error || "Failed to sign proposal. Please try again.");
                 return;
             }
 
