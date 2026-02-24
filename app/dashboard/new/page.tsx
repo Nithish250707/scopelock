@@ -98,7 +98,13 @@ export default function NewProjectPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(data.error || "Failed to generate proposal");
+                if (data.error === "free_limit_reached") {
+                    setError(
+                        "You've used your 2 free proposals this month. Upgrade to Pro for unlimited proposals."
+                    );
+                } else {
+                    setError(data.error || "Failed to generate proposal");
+                }
                 return;
             }
 
@@ -186,12 +192,18 @@ export default function NewProjectPage() {
                 {error && (
                     <div
                         id="form-error"
-                        className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+                        className={`mb-8 rounded-xl border px-4 py-3 text-sm ${error.includes("free proposals")
+                                ? "border-[#7c3aed]/30 bg-[#7c3aed]/10 text-[#d4d4d8]"
+                                : "border-red-500/20 bg-red-500/10 text-red-400"
+                            }`}
                     >
                         <div className="flex items-center gap-2">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 shrink-0"
+                                className={`h-4 w-4 shrink-0 ${error.includes("free proposals")
+                                        ? "text-[#a78bfa]"
+                                        : ""
+                                    }`}
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -203,8 +215,18 @@ export default function NewProjectPage() {
                                 <line x1="15" y1="9" x2="9" y2="15" />
                                 <line x1="9" y1="9" x2="15" y2="15" />
                             </svg>
-                            {error}
+                            <span className="flex-1">{error}</span>
                         </div>
+                        {error.includes("free proposals") && (
+                            <div className="mt-3 flex justify-end">
+                                <Link
+                                    href="/#pricing"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                                >
+                                    Upgrade to Pro
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 )}
 

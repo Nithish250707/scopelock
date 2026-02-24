@@ -67,8 +67,8 @@ export default function LandingPage() {
       a: "Absolutely. Many users only use the AI proposal generator and never touch the scope protection features. Generate, download as PDF, and send to your client however you want.",
     },
     {
-      q: "What happens after the 7-day trial?",
-      a: "You'll be asked to choose a plan. If you don't upgrade, you keep read-only access to your existing proposals — nothing gets deleted.",
+      q: "Is the free plan really free forever?",
+      a: "Yes. No credit card, no expiry. The Free plan gives you 2 proposals per month, always. Upgrade to Pro when you're ready for unlimited proposals and advanced features.",
     },
     {
       q: "Can I cancel anytime?",
@@ -121,7 +121,7 @@ export default function LandingPage() {
               href="/signup"
               className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9]"
             >
-              Get Started Free →
+              Start Free — No card required →
             </Link>
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function LandingPage() {
               href="/signup"
               className="rounded-xl bg-[#7c3aed] px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-purple-500/25"
             >
-              Start Free Trial →
+              Start Free — No card needed →
             </Link>
             <a
               href="#how-it-works"
@@ -174,10 +174,10 @@ export default function LandingPage() {
               <Check /> No credit card required
             </span>
             <span className="flex items-center gap-1.5">
-              <Check /> 7-day free trial
+              <Check /> Free forever — 2 proposals/month
             </span>
             <span className="flex items-center gap-1.5">
-              <Check /> Cancel anytime
+              <Check /> Upgrade anytime for unlimited
             </span>
           </div>
 
@@ -439,33 +439,103 @@ export default function LandingPage() {
 
       {/* ═══════════════════ SECTION 7: PRICING ═══════════════════ */}
       <section id="pricing" className="px-6 py-24">
-        <div className="fade-in mx-auto max-w-4xl">
+        <div className="fade-in mx-auto max-w-5xl">
           <h2 className="text-center text-3xl font-bold sm:text-4xl">
-            Simple pricing
+            Simple, honest pricing
           </h2>
           <p className="mt-3 text-center text-[#94a3b8]">
-            Pays for itself the first time you prevent scope creep.
+            Start free. Upgrade when you need more. No tricks, no trials.
           </p>
           <p className="mt-4 text-center text-sm text-[#a78bfa]">
-            🔒 30-day money back guarantee
+            ✨ Free forever — no credit card required
           </p>
 
-          <div className="mx-auto mt-12 grid max-w-3xl gap-6 md:grid-cols-2">
-            {/* SOLO */}
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {/* FREE */}
             <div className="rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-8">
-              <p className="text-lg font-semibold text-[#94a3b8]">
-                Solo
-              </p>
+              <p className="text-lg font-semibold text-[#94a3b8]">Free</p>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-5xl font-bold text-white">
-                  $19
-                </span>
-                <span className="text-lg text-[#94a3b8]">
-                  /month
-                </span>
+                <span className="text-5xl font-bold text-white">$0</span>
+                <span className="text-lg text-[#94a3b8]">/month</span>
               </div>
               <p className="mt-1 text-sm text-[#94a3b8]">
-                7 days free, then $19/month
+                Forever free — no card needed
+              </p>
+
+              <div className="my-6 border-t border-[#2d2d4e]" />
+
+              <ul className="space-y-3 text-sm text-[#94a3b8]">
+                {[
+                  "2 AI proposals/month",
+                  "PDF download",
+                  "Client signing link",
+                  "Revision tracker",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2">
+                    <Check /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/signup"
+                className="mt-8 block w-full rounded-xl border border-[#2d2d4e] py-3 text-center text-sm font-semibold text-[#94a3b8] transition-all hover:border-[#7c3aed] hover:text-white"
+              >
+                Get Started Free
+              </Link>
+            </div>
+
+            {/* SOLO — $9 — MOST POPULAR */}
+            <div className="relative rounded-2xl border border-[#7c3aed] bg-[#1a1a2e] p-8 shadow-xl shadow-purple-500/10">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-[#7c3aed] px-4 py-1 text-xs font-semibold text-white">
+                  Most Popular
+                </span>
+              </div>
+
+              <p className="text-lg font-semibold text-[#a78bfa]">Solo</p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold text-white">$9</span>
+                <span className="text-lg text-[#94a3b8]">/month</span>
+              </div>
+              <p className="mt-1 text-sm text-[#94a3b8]">
+                For freelancers ready to grow
+              </p>
+
+              <div className="my-6 border-t border-[#2d2d4e]" />
+
+              <ul className="space-y-3 text-sm text-[#94a3b8]">
+                {[
+                  "10 AI proposals/month",
+                  "PDF download",
+                  "Client signing link",
+                  "Scope alert emails",
+                  "Revision tracker",
+                  "5 active projects",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2">
+                    <Check /> {f}
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                href="/signup"
+                className="mt-8 block w-full rounded-xl bg-[#7c3aed] py-3 text-center text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-purple-500/25"
+              >
+                Start Solo →
+              </Link>
+            </div>
+
+            {/* PRO — $19 */}
+            <div className="rounded-2xl border border-[#2d2d4e] bg-[#1a1a2e] p-8">
+              <p className="text-lg font-semibold text-[#94a3b8]">Pro</p>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold text-white">$19</span>
+                <span className="text-lg text-[#94a3b8]">/month</span>
+              </div>
+              <p className="mt-1 text-sm text-[#94a3b8]">
+                For serious freelancers &amp; agencies
               </p>
 
               <div className="my-6 border-t border-[#2d2d4e]" />
@@ -473,66 +543,13 @@ export default function LandingPage() {
               <ul className="space-y-3 text-sm text-[#94a3b8]">
                 {[
                   "Unlimited AI proposals",
-                  "5 active projects",
-                  "PDF download",
-                  "Revision tracker",
-                  "Scope alert emails",
-                ].map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-center gap-2"
-                  >
-                    <Check /> {f}
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                href="/signup"
-                className="mt-6 block w-full rounded-xl border border-[#7c3aed] py-3 text-center text-sm font-semibold text-[#a78bfa] transition-all hover:bg-[#7c3aed] hover:text-white"
-              >
-                Start Free Trial
-              </Link>
-            </div>
-
-            {/* PRO */}
-            <div className="relative rounded-2xl border border-[#7c3aed] bg-[#1a1a2e] p-8">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className="rounded-full bg-[#7c3aed] px-4 py-1 text-xs font-semibold text-white">
-                  Most Popular
-                </span>
-              </div>
-
-              <p className="text-lg font-semibold text-[#a78bfa]">
-                Pro
-              </p>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-5xl font-bold text-white">
-                  $29
-                </span>
-                <span className="text-lg text-[#94a3b8]">
-                  /month
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-[#94a3b8]">
-                7 days free, then $29/month
-              </p>
-
-              <div className="my-6 border-t border-[#2d2d4e]" />
-
-              <ul className="space-y-3 text-sm text-[#94a3b8]">
-                {[
-                  "Everything in Solo",
                   "Unlimited projects",
                   "Digital client signing",
                   "Change order generator",
                   "Custom proposal branding",
                   "Priority support",
                 ].map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-center gap-2"
-                  >
+                  <li key={f} className="flex items-center gap-2">
                     <Check /> {f}
                   </li>
                 ))}
@@ -540,9 +557,9 @@ export default function LandingPage() {
 
               <Link
                 href="/signup"
-                className="mt-6 block w-full rounded-xl bg-[#7c3aed] py-3 text-center text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-purple-500/25"
+                className="mt-8 block w-full rounded-xl border border-[#7c3aed] py-3 text-center text-sm font-semibold text-[#a78bfa] transition-all hover:bg-[#7c3aed] hover:text-white"
               >
-                Start Free Trial →
+                Go Pro →
               </Link>
             </div>
           </div>
@@ -593,14 +610,14 @@ export default function LandingPage() {
             Stop giving your work away for free.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-[#94a3b8] sm:text-xl">
-            Generate your first scope-protecting proposal in 30
-            seconds. Free for 7 days.
+            Generate your first scope-protecting proposal in 30 seconds.
+            Free forever — no credit card, no trial, no tricks.
           </p>
           <Link
             href="/signup"
             className="mt-8 inline-block rounded-2xl bg-[#7c3aed] px-10 py-5 text-lg font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-xl hover:shadow-purple-500/30 sm:text-xl"
           >
-            Start Free Trial — No card required →
+            Start Free — No card required →
           </Link>
         </div>
       </section>

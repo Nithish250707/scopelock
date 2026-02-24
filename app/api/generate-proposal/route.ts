@@ -42,12 +42,33 @@ export async function POST(request: NextRequest) {
         // ── Fetch freelancer profile ──
         const { data: profile } = await supabase
             .from("profiles")
-            .select("full_name")
+            .select("full_name, plan")
             .eq("id", user.id)
             .single();
 
         const freelancerName = profile?.full_name || user.user_metadata?.full_name || "Freelancer";
         const userEmail = user.email || "";
+
+        // ── Check free-tier proposal limit ──
+        const userPlan = profile?.plan ?? "free";
+
+        if (userPlan === "free") {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+            const { count } = await supabase
+                .from("projects")
+                .select("*", { count: "exact", head: true })
+                .eq("user_id", user.id)
+                .gte("created_at", startOfMonth);
+
+            if ((count ?? 0) >= 2) {
+                return NextResponse.json(
+                    { error: "free_limit_reached" },
+                    { status: 403 }
+                );
+            }
+        }
 
         // ── Parse form data ──
         const body = await request.json();

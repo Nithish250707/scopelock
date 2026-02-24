@@ -204,6 +204,8 @@ export default function DashboardPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [signingOut, setSigningOut] = useState(false);
+    const [userPlan, setUserPlan] = useState<string>("free");
+    const [proposalCountThisMonth, setProposalCountThisMonth] = useState<number>(0);
 
     useEffect(() => {
         async function init() {
@@ -219,6 +221,16 @@ export default function DashboardPage() {
 
             setUserEmail(session.user.email ?? "");
 
+            // Fetch user plan from profiles
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("plan")
+                .eq("id", session.user.id)
+                .single();
+
+            const plan = profile?.plan ?? "free";
+            setUserPlan(plan);
+
             // Fetch projects for this user
             const { data: projectsData } = await supabase
                 .from("projects")
@@ -227,6 +239,21 @@ export default function DashboardPage() {
                 .order("created_at", { ascending: false });
 
             setProjects(projectsData ?? []);
+
+            // Count proposals created this month
+            if (plan === "free") {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+                const { count } = await supabase
+                    .from("projects")
+                    .select("*", { count: "exact", head: true })
+                    .eq("user_id", session.user.id)
+                    .gte("created_at", startOfMonth);
+
+                setProposalCountThisMonth(count ?? 0);
+            }
+
             setLoading(false);
         }
 
@@ -300,6 +327,57 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </nav>
+
+            {/* ─── FREE TIER LIMIT BANNER ─── */}
+            {userPlan === "free" && proposalCountThisMonth >= 2 && (
+                <div
+                    id="free-limit-banner"
+                    className="border-b border-[#7c3aed]/20 bg-gradient-to-r from-[#7c3aed]/10 via-[#0f0f0f] to-[#7c3aed]/10"
+                >
+                    <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 py-4 sm:flex-row sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            {/* Warning icon */}
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#7c3aed]/20">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4 text-[#a78bfa]"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                            </span>
+                            <p className="text-sm text-[#d4d4d8]">
+                                You&apos;ve used your <strong className="text-white">2 free proposals</strong> this month.
+                                Upgrade to create unlimited proposals.
+                            </p>
+                        </div>
+                        <Link
+                            id="upgrade-btn"
+                            href="/#pricing"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#7c3aed] px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-[#6d28d9] hover:shadow-lg hover:shadow-[#7c3aed]/25"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M13 7l5 5-5 5M6 7l5 5-5 5" />
+                            </svg>
+                            Upgrade
+                        </Link>
+                    </div>
+                </div>
+            )}
 
             {/* ─── MAIN CONTENT ─── */}
             <main className="mx-auto max-w-6xl px-6 py-10">
